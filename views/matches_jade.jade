@@ -1,0 +1,17 @@
+doctype html
+html(lang="en")
+  head
+    title="Jade Matches Template"
+  body
+  center
+      h1 SER 421 Find Your Match
+      h2 Survey
+      h4 #{bestMatch}
+  center
+    form(method="GET", action="/survey/1")
+        p
+        button(type="submit") Revise Survey    
+    form(method="GET",action="/logout")
+      p
+        button(type="submit") Logout
+    

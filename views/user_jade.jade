@@ -1,0 +1,22 @@
+doctype html
+html(lang="en")
+  head
+    title="Jade User Template"
+  body
+  center
+      h1 SER 421 User
+  center
+      h4 Name: #{user}
+      h4 Quest: #{quest}
+      h4 Color: #{color}
+      h4 Capital: #{capital}
+      
+  center
+      form(method="GET",action="/deleteEntry/:#{user}")
+        p
+          button(type="submit") Delete
+      
+  center
+      form(method="GET",action="/logout")
+        p
+          button(type="submit") Logout

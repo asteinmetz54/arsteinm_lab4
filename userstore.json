@@ -1,0 +1,20 @@
+[
+    {
+        "user": "andrew",
+        "answer":[
+            "Andrew",
+            "To find the Grail",
+            "Blue",
+            "Finland"
+        ]
+    },
+    {
+        "user": "bob",
+        "answer":[
+            "bob",
+            "To slay the rabbit",
+            "red",
+            "I don't know that!"
+        ]
+    }
+]

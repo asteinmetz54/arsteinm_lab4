@@ -1,0 +1,25 @@
+doctype html
+html(lang="en")
+  head
+    title="Jade Survey Template"
+  body
+  center
+      h1 SER 421 Partner Match
+      h2 Survey
+  center
+    form(action="#{nextQuestion}", method="post")
+      p #{questionNum} of 4:
+      p #{question}
+      p 
+        input(type="text", name="#{inputName}", value='#{previousAnswer}', placeholder="Answer", autocomplete="off", required, autofocus)
+        
+      p
+        button(type="submit") Submit
+        
+    form(method="GET",action="/logout")
+      p
+        button(type="submit") Logout
+    
+   
+   
+  
