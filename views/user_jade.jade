@@ -5,14 +5,15 @@ html(lang="en")
   body
   center
       h1 SER 421 User
+      h2 Username: #{username}
   center
-      h4 Name: #{user}
+      h4 Name: #{name}
       h4 Quest: #{quest}
       h4 Color: #{color}
       h4 Capital: #{capital}
       
   center
-      form(method="GET",action="/deleteEntry/:#{user}")
+      form(method="GET",action="/deleteEntry/:#{username}")
         p
           button(type="submit") Delete
       

@@ -6,10 +6,13 @@ html(lang="en")
   center
       h1 SER 421 Admin
   center
-      h4 Surveys: #{totalSurveys}
-      h4 Users: #{users}
-      h4 To view details go to http://localhost:3000/user/:"userId"
-      h4 Where "userId" is a valid name in the survey
+      h4 Total Users: #{totalSurveys}
+      h4 Users:
+      ol
+      -for(var i =0; i < Users.length; i++){
+          li
+            a(href="/user/:#{Users[i]}") #{Users[i]}
+      -}
       
   center
       form(method="GET",action="/logout")
