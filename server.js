@@ -4,7 +4,7 @@ const express = require('express'),
 	bodyParser = require('body-parser'),
 	session = require('express-session'),
 	jade = require('jade'),
-    url = require('url'),
+	url = require('url'),
 	cookieParser = require('cookie-parser');
 
 var urlencodedParser = bodyParser.urlencoded({ extended: false });
@@ -62,7 +62,7 @@ app.post('/process_post', urlencodedParser, function (req, res) {
 		}
 	} else {
 		res.setHeader(403);
-        res.send("Incorrect username or password. Go back an try again.");
+		res.send("Incorrect username or password. Go back an try again.");
 	}
 });
 
@@ -75,7 +75,7 @@ app.all('/survey/1', function (req, res, next) {
 	app.locals.question = temp[0].question;
 	app.locals.nextQuestion = "/survey/2";
 	app.locals.inputName = "name";
-    
+
 	//check if existing user to populate answer
 	if (userExist(req.session.user)) {
 		app.locals.previousAnswer = loadUserAnswer(req.session.user, 1);
@@ -116,7 +116,7 @@ app.all('/survey/3', urlencodedParser, function (req, res, next) {
 	app.locals.question = temp[2].question;
 	app.locals.nextQuestion = "/survey/4";
 	app.locals.inputName = "color";
-    
+
 	if (userExist(req.session.user)) {
 		app.locals.previousAnswer = loadUserAnswer(req.session.user, 3);
 	} else {
@@ -133,12 +133,12 @@ app.all('/survey/3', urlencodedParser, function (req, res, next) {
 //survey question 4
 app.all('/survey/4', urlencodedParser, function (req, res, next) {
 	var temp = readJson('survey.json');
-    
+
 	app.locals.questionNum = 'Question 4';
 	app.locals.question = temp[3].question;
-	app.locals.nextQuestion = "/matches";
+	app.locals.nextQuestion = "/survey/process";
 	app.locals.inputName = "capital";
-    
+
 	if (userExist(req.session.user)) {
 		app.locals.previousAnswer = loadUserAnswer(req.session.user, 4);
 	} else {
@@ -146,50 +146,67 @@ app.all('/survey/4', urlencodedParser, function (req, res, next) {
 	}
 	if (req.method == "POST") {
 		req.session.color = req.body.color;
-	} 
+	}
 	res.render('main_jade');
 	next();
 });
 
+app.post("/survey/process", urlencodedParser, function (req, res, next) {
+	var store = readJson('userstore.json');
+	req.session.capital = req.body.capital;
+	var answers = [req.session.name, req.session.quest, req.session.color, req.session.capital];
+	user = req.cookies.username;
+	//check if user exists in the store
+	if (userExist(user)) {
+		var index = getUserIndex(user);
+		for (var i = 0; i < 4; i++) {
+			store[index].answer[i] = answers[i];
+		}
+	} else {
+		store.push({ user: user, answer: answers });
+	}
+	writeJson(store);
 
-//Still needs work------------------------------------------------
+	res.redirect('/matches');
+});
+
 app.all('/matches', urlencodedParser, function (req, res, next) {
 	//endpoint that renders the best partner matches based on survey results
-	var temp = readJson('survey.json');
 	var store = readJson('userstore.json');
-	var newUser = [];
-    
-	if (req.method == "POST") {
-        req.session.capital = req.body.capital;
-		newUser = [req.session.name, req.session.quest, req.session.color, req.session.capital];
-	}else if(req.method == "GET"){
-		newUser = [store["andrew"].answer[0],store[req.session.user].answer[1], store[req.session.user].answer[2],store[req.session.user].answer[3]];
-	}
-    
-    //Find matches for user
-    var match = new Array();
-    var count = 0;
-    
-    for (var k=1; k<temp.length; k++){
-        for (var l=1; l<newUser.length; l++){
-            if (removePunct(temp[l].answer[k-1]).toLowerCase() == removePunct(newUser[l]).toLowerCase()){
-                count++;
-            }
-        }
-        match.push({"user":temp[0].answer[k-1].toString(), "matches":count});
-        count = 0;
-    }
-    
-    bubbleSort(match);
-    console.log(match);
-    app.locals.bestMatch = JSON.stringify(match);
+	var username = req.cookies.username;
+	userIndex = getUserIndex(username);
 
-    //Add user to survey.json
-    for (var j=0; j<temp.length; j++){
-        temp[j].answer.push(newUser[j]);
-    }
-    writeJson(temp);
-    
+	if (req.method == "POST") {
+		user = [req.session.name, req.session.quest, req.session.color, req.session.capital];
+	} else if (req.method == "GET") {
+		user = [store[userIndex].answer[0], store[userIndex].answer[1], store[userIndex].answer[2], store[userIndex].answer[3]];
+	}
+
+	//compare users answers to userstore
+	var match = new Array();
+
+	//outer loop to cycle through userstore
+	for (var i = 0; i < store.length; i++) {
+		var count = 0;
+		//make sure not user currently logged in that you are comparing
+		if (i != userIndex) {
+			//inner loop to cycle through user answers
+			for (var j = 0; j < 4; j++) {
+				if (removePunct(store[i].answer[j]).toLowerCase() == removePunct(user[j]).toLowerCase()){
+					count++;
+				}
+			}
+			match.push({"user": store[i].user, "matches": count});
+		}
+	}
+	match = bubbleSort(match);
+	console.log("after bubblesort: " + JSON.stringify(match));
+	var sortMatches = [];
+	for (var i = 0; i < match.length; i++){
+		sortMatches[i] = match[i].user;
+	}
+
+	app.locals.matches = sortMatches;
 	res.render('matches_jade');
 	res.end();
 });
@@ -211,85 +228,81 @@ app.get('/logout', function (req, res) {
 
 app.get('/tools', function (req, res) {
 	//endpoint for the admin functionality (6a) and should only be available to the admin.
-    if (req.session.user !== 'admin'){
-        res.status(401);
-        res.send("Authorization required. Please try again.");
-        res.redirect('/');
-    }
-    var temp = readJson('survey.json');
-    var tempUsers = new Array();
-    for (var i=0; i<temp[0].answer.length; i++){
-        tempUsers.push(temp[0].answer[i]);
-    }
-    app.locals.survNum = temp[0].answer.length;
-    app.locals.users = tempUsers;
-    
+	if (req.session.user !== 'admin') {
+		res.status(401);
+		res.send("Authorization required. Please try again.");
+		res.redirect('/');
+	}
+
+	store = readJson('userstore.json');
+	total = store.length;
+	app.locals.totalSurveys = total;
+
 	res.render('tools_jade');
 });
 
-app.get('/user/:userId', function (req, res){
-    var temp = readJson('survey.json');
-    var result = new Array();
-    var name = req.params.userId;
-    name = name.substr(1);
-    
-    for(var i=0; i<temp[0].answer.length; i++){
-		if (name == temp[0].answer[i]){
+app.get('/user/:userId', function (req, res) {
+	var temp = readJson('survey.json');
+	var result = new Array();
+	var name = req.params.userId;
+	name = name.substr(1);
+
+	for (var i = 0; i < temp[0].answer.length; i++) {
+		if (name == temp[0].answer[i]) {
 			app.locals.user = name;
-            app.locals.quest = temp[1].answer[i];
-            app.locals.color = temp[2].answer[i];
-            app.locals.capital = temp[3].answer[i];
-        }
+			app.locals.quest = temp[1].answer[i];
+			app.locals.color = temp[2].answer[i];
+			app.locals.capital = temp[3].answer[i];
+		}
 	}
-    
-    res.render('user_jade');
+
+	res.render('user_jade');
 })
 
-app.get('/deleteEntry/:userId', function (req, res){
-    var temp = readJson('survey.json');
-    var result = new Array();
-    var name = req.params.userId;
-    name = name.substr(1);
-    
-    for(var i=0; i<temp[0].answer.length; i++){
-		if (name == temp[0].answer[i]){
-            temp.splice(temp[0].answer[i]);
-            temp.splice(temp[1].answer[i]);
-            temp.splice(temp[2].answer[i]);
-            temp.splice(temp[3].answer[i]);
-        }
-    }
-    writeJson(temp);
+app.get('/deleteEntry/:userId', function (req, res) {
+	var temp = readJson('survey.json');
+	var result = new Array();
+	var name = req.params.userId;
+	name = name.substr(1);
+
+	for (var i = 0; i < temp[0].answer.length; i++) {
+		if (name == temp[0].answer[i]) {
+			temp.splice(temp[0].answer[i]);
+			temp.splice(temp[1].answer[i]);
+			temp.splice(temp[2].answer[i]);
+			temp.splice(temp[3].answer[i]);
+		}
+	}
+	writeJson(temp);
 })
 
 
 //Read file in
 function readJson(jsonFile) {
 	try {
-        var json = fs.readFileSync(jsonFile);
-	    var survey = JSON.parse(json);
-    } catch (err) {
-        if (err.code === 'ENOENT') {
-            console.log('File not found')
-        } else {
-            throw err;
-        }
-    }
+		var json = fs.readFileSync(jsonFile);
+		var survey = JSON.parse(json);
+	} catch (err) {
+		if (err.code === 'ENOENT') {
+			console.log('File not found')
+		} else {
+			throw err;
+		}
+	}
 	return survey;
 }
 
 //Write file
 function writeJson(jsonFile) {
-    try {
-        fs.writeFileSync('survey.json', JSON.stringify(jsonFile));
-    } catch (err) {
-        if (err.code === 'ENOENT') {
-            console.log('File not found')
-        } else {
-            throw err;
-        }
-    }
-    console.log("file written to survey.json");
+	try {
+		fs.writeFileSync('userstore.json', JSON.stringify(jsonFile));
+	} catch (err) {
+		if (err.code === 'ENOENT') {
+			console.log('File not found')
+		} else {
+			throw err;
+		}
+	}
 }
 
 //check if user exists in user store
@@ -320,21 +333,32 @@ function loadUserAnswer(username, answerNum) {
 	return ans;
 }
 
-function removePunct(str){
-     str = str.replace(/[.,\/#!$?%\^&\*;:{}=\-_`~()]/g,"");
-     return str;
- }
+function getUserIndex(username) {
+	var index;
+	var store = readJson('userstore.json');
+	for (var i = 0; i < store.length; i++) {
+		if (store[i].user == username) {
+			return index = i;
+		}
+	}
+	return 0;
+}
 
-function bubbleSort(arr){
-   var len = arr.length;
-   for (var i = len-1; i>=0; i--){
-     for(var j = 1; j<=i; j++){
-       if(arr[j-1].matches<arr[j].matches){
-           var temp = arr[j-1];
-           arr[j-1] = arr[j];
-           arr[j] = temp;
-        }
-     }
-   }
-   return arr;
+function removePunct(str) {
+	str = str.replace(/[.,\/#!$?%\^&\*;:{}=\-_`~()]/g, "");
+	return str;
+}
+
+function bubbleSort(arr) {
+	var len = arr.length;
+	for (var i = len - 1; i >= 0; i--) {
+		for (var j = 1; j <= i; j++) {
+			if (arr[j - 1].matches < arr[j].matches) {
+				var temp = arr[j - 1];
+				arr[j - 1] = arr[j];
+				arr[j] = temp;
+			}
+		}
+	}
+	return arr;
 }

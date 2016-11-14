@@ -5,8 +5,11 @@ html(lang="en")
   body
   center
       h1 SER 421 Find Your Match
-      h2 Survey
-      h4 #{bestMatch}
+      h2 Results based off answers to the survey ranked from highest to lowest
+     center
+     ol
+      each user in matches
+        li= user
   center
     form(method="GET", action="/survey/1")
         p

@@ -1,20 +1,47 @@
 [
     {
         "user": "andrew",
-        "answer":[
+        "answer": [
             "Andrew",
-            "To find the Grail",
-            "Blue",
+            "To find the Holy Grail",
+            "green",
             "Finland"
         ]
     },
     {
         "user": "bob",
-        "answer":[
+        "answer": [
             "bob",
             "To slay the rabbit",
             "red",
             "I don't know that!"
+        ]
+    },
+    {
+        "user": "jaclyn",
+        "answer": [
+            "Jaclyn",
+            "To slay the magic dragon",
+            "purple",
+            "I don't know that!"
+        ]
+    },
+    {
+        "user": "bobby",
+        "answer": [
+            "bobby",
+            "to find the holy grail",
+            "green",
+            "iceland"
+        ]
+    },
+    {
+        "user": "richard",
+        "answer": [
+            "richard",
+            "to slay the rabbit",
+            "green",
+            "iceland"
         ]
     }
 ]
